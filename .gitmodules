@@ -1,0 +1,3 @@
+[submodule "src/PEGTL"]
+	path = src/PEGTL
+	url = https://github.com/ColinH/PEGTL
