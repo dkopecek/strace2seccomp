@@ -7,7 +7,9 @@ strace2seccomp_SOURCES=\
 	src/collect.hpp \
 	src/collect.cpp \
 	src/analyze.hpp \
-	src/analyze.cpp
+	src/analyze.cpp \
+	src/Syscall.hpp \
+	src/Syscall.cpp
 
 strace2seccomp_CPPFLAGS=\
 	-I$(top_srcdir)/src/PEGTL
