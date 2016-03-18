@@ -27,7 +27,7 @@ static void showUsage(const char *arg0, std::ostream& stream)
 
 int main(int argc, char *argv[])
 {
-  const char * arg0 = argv[0];
+  char * const arg0 = argv[0];
   bool collect_mode = false;
   bool analyze_mode = false;
   std::string datadir = ".";
@@ -74,8 +74,10 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  argv += optind;
-  argc -= optind;
+  argv += (optind - 1);
+  argc -= (optind - 1);
+  argv[0] = arg0;
+  optind = 1;
 
   if (collect_mode) {
     return collect(argc, argv, datadir);
