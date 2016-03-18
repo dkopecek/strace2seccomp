@@ -12,3 +12,6 @@ strace2seccomp_SOURCES=\
 strace2seccomp_CPPFLAGS=\
 	-I$(top_srcdir)/src/PEGTL
 
+EXTRA_DIST=\
+	src/PEGTL
+
