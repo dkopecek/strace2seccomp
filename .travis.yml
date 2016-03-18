@@ -1,0 +1,16 @@
+language: cpp
+sudo: required
+dist: trusty
+compiler:
+- clang
+- gcc
+os: linux
+before_install:
+- sudo apt-get -qq update
+before_script:
+- ./autogen.sh
+- mkdir build && cd build
+- ../configure --disable-silent-rules
+script:
+- make
+- make distcheck
