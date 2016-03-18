@@ -20,6 +20,9 @@ namespace st2se
   struct str_nullpointer
     : pegtl_string_t("NULL") {};
 
+  struct str_ellipsis
+    : pegtl_string_t("...") {};
+
   struct integer
     : seq<opt<one<'-'>>, plus<ascii::digit>> {};
 
@@ -45,38 +48,98 @@ namespace st2se
     : sor<character_escaped, character_regular> {};
 
   struct string
-    : if_must<one<'"'>, until<one<'"'>, character>> {};
+    : seq<if_must<one<'"'>, until<one<'"'>, character>>, opt<str_ellipsis>> {};
+
+  struct constant
+    : seq<ranges<'A','Z','_'>, star<ranges<'A','Z','0','9','_'>>> {};
+
+  struct constants
+    : list_must<constant, one<'|'>> {};
+
+  template<char open_char, char close_char>
+  struct container
+  {
+    using analyze_t = analysis::generic<analysis::rule_type::ANY>;
+
+    template<typename Input>
+    static bool match(Input& in)
+    {
+      if (in.size() >= 2) {
+        if (in.begin()[0] == open_char) {
+          int level;
+          size_t i;
+          for (i = 1, level = 1; i < in.size() && level > 0; ++i) {
+            switch(in.begin()[i]) {
+              case open_char:
+                ++level;
+                break;
+              case close_char:
+                --level;
+                break;
+            }
+          }
+          if (level == 0) {
+            in.bump(i);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  };
+
+  struct array
+    : seq<opt<one<'~'>>, container<'[',']'>> {};
+
+  struct structure
+    : container<'{','}'> {};
 
   struct value
-    : sor<integer, pointer, string> {};
+    : sor<pointer, integer, string, constants, array, structure> {};
+
+  struct key_value
+    : seq<ascii::identifier, one<'='>, value> {};
+
+  struct argument
+    : sor<value, key_value, at<str_unfinished>> {};
 
   struct rest
     : star<ascii::any> {};
 
   struct return_value
-    : must<integer, opt<ascii::space, rest>> {};
+    : seq<sor<pointer, integer, one<'?'>>, opt<ascii::space, rest>> {};
 
   struct syscall_args
-    : list<value, one<','>, ascii::space> {};
+    : opt<list<argument, one<','>, ascii::space>> {};
 
   struct syscall_full
-    : must<ascii::identifier, one<'('>, syscall_args, one<')'>, pad<one<'='>, ascii::space>, return_value> {};
+    : seq<one<')'>, pad<one<'='>, ascii::space>, return_value> {};
 
   struct syscall_unfinished
-    : must<ascii::identifier, one<'('>, syscall_args, str_unfinished> {};
+    : pad<str_unfinished, ascii::space> {};
 
-  struct syscall
+  struct syscall_end
     : sor<syscall_full, syscall_unfinished> {};
 
+  struct syscall_start
+    : seq<ascii::identifier, one<'('>, syscall_args> {};
+
+  struct syscall_line
+    : seq<syscall_start, syscall_end> {};
+
   struct signal_line
-    : must<str_sigprefix, plus<ascii::any>> {};
+    : seq<str_sigprefix, plus<ascii::any>> {};
 
   struct killed_line
-    : must<str_killprefix, plus<ascii::any>> {};
+    : seq<str_killprefix, plus<ascii::any>> {};
 
   struct ignored_line
     : sor<signal_line, killed_line> {};
 
   struct strace_line
-    : must<sor<syscall, ignored_line>, eof> {};
+    : sor<syscall_line, ignored_line> {};
+
+  struct grammar
+    : until<eof, must<strace_line>> {};
+
 } /* namespace strace */
