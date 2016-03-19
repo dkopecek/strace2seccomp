@@ -13,7 +13,12 @@ namespace st2se
     if (syscall.name().empty()) {
       throw std::runtime_error("Invalid Syscall object passed to DataSet::upsert");
     }
-    _syscalls[syscall.name()].merge(syscall);
+    auto& map_syscall = _syscalls[syscall.name()];
+
+    if (!map_syscall) {
+      map_syscall.setName(syscall.name());
+    }
+    map_syscall.merge(syscall);
   }
 
   void DataSet::write(std::ostream& stream)
