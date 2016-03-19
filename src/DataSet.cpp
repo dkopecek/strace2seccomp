@@ -24,10 +24,10 @@ namespace st2se
   void DataSet::write(std::ostream& stream)
   {
     for (const auto& node : _syscalls) {
-      stream << node.first << ":" << std::endl;
-      stream << std::setw(4);
-      node.second.write(stream);
-      stream << std::setw(1);
+      auto const& syscall = node.second;
+      stream << "# " << syscall.name() << ", called " << syscall.invocationCount() << " time(s)" << std::endl;
+      syscall.write(stream);
+      stream << std::endl;
     }
   }
 } /* namespace st2se */
