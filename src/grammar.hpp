@@ -121,8 +121,11 @@ namespace st2se
   struct syscall_end
     : sor<syscall_full, syscall_unfinished> {};
 
+  struct syscall_name
+    : ascii::identifier {};
+
   struct syscall_start
-    : seq<ascii::identifier, one<'('>, syscall_args> {};
+    : seq<syscall_name, one<'('>, syscall_args> {};
 
   struct syscall_line
     : seq<syscall_start, syscall_end> {};
