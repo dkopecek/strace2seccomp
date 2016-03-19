@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "Syscall.hpp"
 
 namespace st2se
