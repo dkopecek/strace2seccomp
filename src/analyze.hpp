@@ -1,6 +1,7 @@
 #include <string>
 #include <pegtl.hh>
 #include <iostream>
+#include <stdexcept>
 
 #include "grammar.hpp"
 #include "Syscall.hpp"
@@ -23,10 +24,106 @@ namespace st2se
   struct ParserActions<syscall_name>
   {
     template<typename Input>
-    static void apply(const Input& in, Syscall& syscall)
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
-      syscall.setName(in.string());
+      if (state == ParserState::INITIAL) {
+        syscall.setName(in.string());
+        syscall.addInvocation(Syscall::Invocation());
+        state = ParserState::ARGUMENTS;
+      }
+      else {
+        throw std::runtime_error("Invalid parser state in syscall_name action");
+      }
     }
   };
 
+  template<>
+  struct ParserActions<syscall_full>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ParserState::ARGUMENTS) {
+        syscall.lastInvocation().setComplete(true);
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<constants>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::CONSTANT, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<integer>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::INTEGER, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<pointer>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::POINTER, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<string>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::STRING, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<array>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::ARRAY, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+   }
+  };
+
+  template<>
+  struct ParserActions<structure>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ARGUMENTS) {
+        const Syscall::Argument argument(Syscall::ArgumentType::STRUCTURE, in.string());
+        syscall.lastInvocation().addArgument(argument);
+      }
+    }
+  };
 } /* namespace st2se */
