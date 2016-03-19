@@ -113,6 +113,11 @@ namespace st2se
 
   void Syscall::merge(const Syscall& syscall)
   {
+    if (name() != syscall.name()) {
+      throw std::runtime_error("Cannot merge syscalls with different names");
+    }
+    for (auto const& invocation : syscall.invocations()) {
+      addInvocation(invocation);
+    }
   }
 } /* namespace st2se */
-
