@@ -16,13 +16,13 @@ namespace st2se
       case ArgumentType::INTEGER:
         return value;
       case ArgumentType::STRING:
-        return std::string("string");
+        return std::string("pointer");
       case ArgumentType::POINTER:
         return std::string("pointer");
       case ArgumentType::ARRAY:
-        return std::string("array");
+        return std::string("pointer<array>");
       case ArgumentType::STRUCTURE:
-        return std::string("struct");
+        return std::string("pointer<struct>");
       case ArgumentType::UNKNOWN:
         return std::string("<unknown>");
     }
