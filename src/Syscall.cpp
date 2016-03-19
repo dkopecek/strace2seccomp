@@ -92,15 +92,20 @@ namespace st2se
   {
     for (const auto& invocation : _invocations) {
       stream << _name << "(";
+      size_t index = 0;
+      const size_t count = invocation.arguments.size();
       for (const auto& argument : invocation.arguments) {
         stream << argument.toString();
-        stream << " ";
+        if ((index + 1) < count) {
+          stream << ", ";
+        }
+        ++index;
       }
       if (invocation.complete) {
         stream << ")";
       }
       else {
-        stream << "...";
+        stream << " ...<incomplete call>";
       }
       stream << std::endl;
     }
