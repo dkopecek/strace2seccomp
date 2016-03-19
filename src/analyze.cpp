@@ -6,6 +6,7 @@
 
 #include "analyze.hpp"
 #include "grammar.hpp"
+#include "DataSet.hpp"
 
 #ifndef NDEBUG
 #include <pegtl/analyze.hh>
@@ -19,7 +20,7 @@ static const struct ::option options_long[] = {
   { nullptr, 0, nullptr, 0 }
 };
 
-static bool parseFile(const std::string& filepath, bool trace);
+static bool parseFile(const std::string& filepath, bool trace, st2se::DataSet& dataset);
 
 int analyze(int argc, char *argv[], const std::string& datadir)
 {
@@ -52,16 +53,20 @@ int analyze(int argc, char *argv[], const std::string& datadir)
     return EXIT_FAILURE;
   }
 
+  st2se::DataSet dataset;
+
   for (int i = 0; i < argc; ++i) {
-    if (!parseFile(argv[i], trace)) {
+    if (!parseFile(argv[i], trace, dataset)) {
       return EXIT_FAILURE;
     }
   }
 
+  dataset.write(std::cout);
+
   return EXIT_SUCCESS;
 }
 
-bool parseFile(const std::string& filepath, bool trace)
+bool parseFile(const std::string& filepath, bool trace, st2se::DataSet& dataset)
 {
   std::ifstream stream(filepath);
 
@@ -84,11 +89,17 @@ bool parseFile(const std::string& filepath, bool trace)
     ++line_number;
 
     try {
+      st2se::Syscall syscall;
+
       if (trace) {
-        pegtl::parse<st2se::grammar, pegtl::nothing, pegtl::tracer>(line, filepath);
+        pegtl::parse<st2se::grammar, st2se::ParserActions, pegtl::tracer>(line, filepath, syscall);
       }
       else {
-        pegtl::parse<st2se::grammar>(line, filepath);
+        pegtl::parse<st2se::grammar, st2se::ParserActions>(line, filepath, syscall);
+      }
+
+      if (syscall) {
+        dataset.upsert(syscall);
       }
     }
     catch(const pegtl::parse_error& ex) {
