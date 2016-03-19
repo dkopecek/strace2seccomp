@@ -75,12 +75,12 @@ namespace st2se
 
   const Syscall::Invocation& Syscall::lastInvocation() const
   {
-    return _invocations.at(_invocations.size());
+    return _invocations.at(_invocations.size() - 1);
   }
 
   Syscall::Invocation& Syscall::lastInvocation()
   {
-    return _invocations.at(_invocations.size());
+    return _invocations.at(_invocations.size() - 1);
   }
 
   const std::vector<Syscall::Invocation>& Syscall::invocations() const
