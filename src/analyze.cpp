@@ -90,12 +90,13 @@ bool parseFile(const std::string& filepath, bool trace, st2se::DataSet& dataset)
 
     try {
       st2se::Syscall syscall;
+      st2se::ParserState state = st2se::ParserState::INITIAL;
 
       if (trace) {
-        pegtl::parse<st2se::grammar, st2se::ParserActions, pegtl::tracer>(line, filepath, syscall);
+        pegtl::parse<st2se::grammar, st2se::ParserActions, pegtl::tracer>(line, filepath, syscall, state);
       }
       else {
-        pegtl::parse<st2se::grammar, st2se::ParserActions>(line, filepath, syscall);
+        pegtl::parse<st2se::grammar, st2se::ParserActions>(line, filepath, syscall, state);
       }
 
       if (syscall) {

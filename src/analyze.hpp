@@ -9,6 +9,11 @@ int analyze(int argc, char *argv[], const std::string& datadir);
 
 namespace st2se
 {
+  enum ParserState
+  {
+    INITIAL,
+    ARGUMENTS
+  };
 
   template<typename Rule>
   struct ParserActions
