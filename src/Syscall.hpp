@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <ostream>
+#include <memory>
+#include <unordered_map>
 
 namespace st2se
 {
@@ -24,6 +26,7 @@ namespace st2se
       {
         Argument(ArgumentType _type = ArgumentType::UNKNOWN, const std::string& _value = "");
         std::string toString() const;
+        std::string toKey() const;
 
         ArgumentType type;
         std::string value;
@@ -32,14 +35,24 @@ namespace st2se
       struct Invocation
       {
         Invocation();
+        Invocation(const Invocation& orig);
         void addArgument(const Argument& argument);
         void setComplete(bool _complete = true);
 
         std::vector<Argument> arguments;
         bool complete;
+        std::string key; /* key constructed from all argument values */
+        std::string key_c; /* key constructed from CONSTANT argument values */
+        std::string key_i; /* key constructed from INTEGER argument values */
+        std::string key_ci; /* key constructed from CONTANTS and INTEGER argument values */
+        unsigned type_mask;
       };
 
-      Syscall(const std::string& name = "");
+      using InvocationPtr = std::shared_ptr<Invocation>;
+      using InvocationVec = std::vector<InvocationPtr>;
+      using InvocationVecMap = std::unordered_map<std::string, InvocationVec>;
+
+      Syscall(const std::string& name = std::string());
 
       operator bool() const;
 
@@ -47,16 +60,21 @@ namespace st2se
       void setName(const std::string& name);
 
       size_t invocationCount() const;
-      void addInvocation(const Invocation& invocation);
-      const Invocation& lastInvocation() const;
-      Invocation& lastInvocation();
-      const std::vector<Invocation>& invocations() const;
+      void addInvocation(InvocationPtr invocation);
+      const InvocationPtr lastInvocation() const;
+      InvocationPtr lastInvocation();
+      const InvocationVec& invocations() const;
+      const InvocationVecMap& mappedInvocations() const;
 
       void write(std::ostream& stream) const;
       void merge(const Syscall& syscall);
 
+      void mapInvocation(InvocationPtr invocation);
+
     private:
+      void writeInvocation(std::ostream& stream, InvocationPtr invocation, unsigned type_mask = 0xff) const;
       std::string _name;
-      std::vector<Invocation> _invocations;
+      InvocationVec _invocations;
+      InvocationVecMap _mapped_invocations;
   };
 } /* namespace st2se */

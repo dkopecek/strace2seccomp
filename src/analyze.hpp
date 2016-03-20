@@ -2,6 +2,7 @@
 #include <pegtl.hh>
 #include <iostream>
 #include <stdexcept>
+#include <memory>
 
 #include "grammar.hpp"
 #include "Syscall.hpp"
@@ -28,7 +29,7 @@ namespace st2se
     {
       if (state == ParserState::INITIAL) {
         syscall.setName(in.string());
-        syscall.addInvocation(Syscall::Invocation());
+        syscall.addInvocation(std::make_shared<Syscall::Invocation>());
         state = ParserState::ARGUMENTS;
       }
       else {
@@ -44,7 +45,8 @@ namespace st2se
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ParserState::ARGUMENTS) {
-        syscall.lastInvocation().setComplete(true);
+        syscall.lastInvocation()->setComplete(true);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
     }
   };
@@ -57,7 +59,8 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::CONSTANT, in.string());
-        syscall.lastInvocation().addArgument(argument);
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
     }
   };
@@ -70,7 +73,8 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::INTEGER, in.string());
-        syscall.lastInvocation().addArgument(argument);
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
     }
   };
@@ -83,8 +87,9 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::POINTER, in.string());
-        syscall.lastInvocation().addArgument(argument);
-      }
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
+     }
     }
   };
 
@@ -96,7 +101,8 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::STRING, in.string());
-        syscall.lastInvocation().addArgument(argument);
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
     }
   };
@@ -109,7 +115,8 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::ARRAY, in.string());
-        syscall.lastInvocation().addArgument(argument);
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
    }
   };
@@ -122,7 +129,8 @@ namespace st2se
     {
       if (state == ARGUMENTS) {
         const Syscall::Argument argument(Syscall::ArgumentType::STRUCTURE, in.string());
-        syscall.lastInvocation().addArgument(argument);
+        syscall.lastInvocation()->addArgument(argument);
+        syscall.mapInvocation(syscall.lastInvocation());
       }
     }
   };
