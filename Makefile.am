@@ -11,7 +11,9 @@ strace2seccomp_SOURCES=\
 	src/Syscall.hpp \
 	src/Syscall.cpp \
 	src/DataSet.hpp \
-	src/DataSet.cpp
+	src/DataSet.cpp \
+	src/SeccompCode.hpp \
+	src/SeccompCode.cpp
 
 strace2seccomp_CPPFLAGS=\
 	-I$(top_srcdir)/src/PEGTL
