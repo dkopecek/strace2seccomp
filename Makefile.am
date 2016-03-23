@@ -3,11 +3,8 @@ bin_PROGRAMS=\
 
 strace2seccomp_SOURCES=\
 	src/main.cpp \
-	src/grammar.hpp \
-	src/collect.hpp \
-	src/collect.cpp \
-	src/analyze.hpp \
-	src/analyze.cpp \
+	src/Grammar.hpp \
+	src/ParserActions.hpp \
 	src/Syscall.hpp \
 	src/Syscall.cpp \
 	src/DataSet.hpp \

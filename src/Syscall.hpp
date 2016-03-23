@@ -11,24 +11,37 @@ namespace st2se
   class Syscall
   {
     public:
-      enum ArgumentType
+      enum class ArgumentType
       {
-        CONSTANT,
         INTEGER,
-        STRING,
         POINTER,
+        UNKNOWN,
+      };
+
+      enum class ArgumentHint
+      {
+        STRING,
+        PATH,
         ARRAY,
         STRUCTURE,
-        UNKNOWN
+        FILE_DESCRIPTOR,
+        FLAGS,
+        CONSTANT
       };
 
       struct Argument
       {
         Argument(ArgumentType _type = ArgumentType::UNKNOWN, const std::string& _value = "");
-        std::string toString() const;
+        std::string toTypeString() const;
         std::string toKey() const;
+        bool matches(ArgumentType _type) const;
+        bool matches(ArgumentHint _hint) const;
+        bool matches(const std::string& _value) const;
+        void setHint(ArgumentHint _hint);
+        void setValue(ArgumentType _type, const std::string& _value);
 
         ArgumentType type;
+        unsigned hints;
         std::string value;
       };
 
@@ -38,7 +51,10 @@ namespace st2se
         Invocation(const Invocation& orig);
         void addArgument(const Argument& argument);
         void setComplete(bool _complete = true);
-
+        bool contains(ArgumentType type) const;
+        bool contains(ArgumentHint hint) const;
+        bool contains(const std::string& value) const;
+ 
         std::vector<Argument> arguments;
         bool complete;
         std::string key; /* key constructed from all argument values */
@@ -46,6 +62,7 @@ namespace st2se
         std::string key_i; /* key constructed from INTEGER argument values */
         std::string key_ci; /* key constructed from CONTANTS and INTEGER argument values */
         unsigned type_mask;
+        unsigned hint_mask;
       };
 
       using InvocationPtr = std::shared_ptr<Invocation>;

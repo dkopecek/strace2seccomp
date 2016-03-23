@@ -112,8 +112,11 @@ namespace st2se
   struct syscall_args
     : opt<list<argument, one<','>, ascii::space>> {};
 
+  struct syscall_return
+    : pad<one<'='>, ascii::space> {};
+
   struct syscall_full
-    : seq<one<')'>, pad<one<'='>, ascii::space>, return_value> {};
+    : seq<one<')'>, syscall_return, return_value> {};
 
   struct syscall_unfinished
     : pad<str_unfinished, ascii::space> {};

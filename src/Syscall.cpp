@@ -5,50 +5,60 @@ namespace st2se
 {
   Syscall::Argument::Argument(ArgumentType _type, const std::string& _value)
   {
-    type = _type;
-    value = _value;
+    setValue(_type, _value);
+    hints = 0;
   }
 
-  std::string Syscall::Argument::toString() const
+  std::string Syscall::Argument::toTypeString() const
   {
     switch(type) {
-      case ArgumentType::CONSTANT:
-        return value;
       case ArgumentType::INTEGER:
-        return value;
-      case ArgumentType::STRING:
-        return std::string("pointer");
+        return std::string("integer");
       case ArgumentType::POINTER:
         return std::string("pointer");
-      case ArgumentType::ARRAY:
-        return std::string("pointer<array>");
-      case ArgumentType::STRUCTURE:
-        return std::string("pointer<struct>");
       case ArgumentType::UNKNOWN:
         break;
     }
-    return std::string("<unknown>");
+    return std::string("unknown");
   }
 
   std::string Syscall::Argument::toKey() const
   {
     switch(type) {
-      case ArgumentType::CONSTANT:
-        return std::string("$c:") + value;
       case ArgumentType::INTEGER:
         return std::string("$i:") + value;
-      case ArgumentType::STRING:
-        return std::string("$p:") + value;
       case ArgumentType::POINTER:
         return std::string("$p:") + value;
-      case ArgumentType::ARRAY:
-        return std::string("$a:") + value;
-      case ArgumentType::STRUCTURE:
-        return std::string("$s:") + value;
       case ArgumentType::UNKNOWN:
         break;
     }
     return std::string("$u:*");
+  }
+
+  bool Syscall::Argument::matches(ArgumentType _type) const
+  {
+    return type == _type;
+  }
+
+  bool Syscall::Argument::matches(ArgumentHint _hint) const
+  {
+    return !!(hints & (1 << (int)_hint));
+  }
+
+  bool Syscall::Argument::matches(const std::string& _value) const
+  {
+    return value == _value;
+  }
+
+  void Syscall::Argument::setHint(ArgumentHint _hint)
+  {
+    hints |= 1 << (int)_hint;
+  }
+
+  void Syscall::Argument::setValue(ArgumentType _type, const std::string& _value)
+  {
+    type = _type;
+    value = _value;
   }
 
   Syscall::Invocation::Invocation()
@@ -59,6 +69,7 @@ namespace st2se
     key_i = "II";
     key_ci = "CI";
     type_mask = 0;
+    hint_mask = 0;
   }
 
   Syscall::Invocation::Invocation(const Invocation& orig)
@@ -69,6 +80,8 @@ namespace st2se
     key_c = orig.key_c;
     key_i = orig.key_i;
     key_ci = orig.key_ci;
+    type_mask = orig.type_mask;
+    hint_mask = orig.hint_mask;
   }
 
   void Syscall::Invocation::addArgument(const Argument& argument)
@@ -78,29 +91,30 @@ namespace st2se
     /* Update keys */
     key.append(argument.toKey());
 
-    if (argument.type == ArgumentType::CONSTANT) {
+    if (argument.matches(ArgumentHint::CONSTANT)) {
       key_c.append(argument.toKey());
     }
     else {
       key_c.append("$_");
     }
 
-    if (argument.type == ArgumentType::INTEGER) {
+    if (argument.matches(ArgumentType::INTEGER)) {
       key_i.append(argument.toKey());
     }
     else {
       key_i.append("$_");
     }
 
-    if (argument.type == ArgumentType::CONSTANT ||
-        argument.type == ArgumentType::INTEGER) {
+    if (argument.matches(ArgumentHint::CONSTANT) ||
+        argument.matches(ArgumentType::INTEGER)) {
       key_ci.append(argument.toKey());
     }
     else {
       key_ci.append("$_");
     }
-    /* Update mask */
-    type_mask |= 1<<argument.type;
+    /* Update type and hint masks */
+    type_mask |= 1<<(int)argument.type;
+    hint_mask |= argument.hints;
   }
 
   void Syscall::Invocation::setComplete(bool _complete)
@@ -111,6 +125,26 @@ namespace st2se
     key_c.append(key_suffix);
     key_i.append(key_suffix);
     key_ci.append(key_suffix);
+  }
+
+  bool Syscall::Invocation::contains(ArgumentType type) const
+  {
+    return !!(type_mask & (1 << (int)type));
+  }
+
+  bool Syscall::Invocation::contains(ArgumentHint hint) const
+  {
+    return !!(hint_mask & (1 << (int)hint));
+  }
+
+  bool Syscall::Invocation::contains(const std::string& value) const
+  {
+    for (auto const& argument : arguments) {
+      if (argument.matches(value)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Syscall::Syscall(const std::string& name)
@@ -172,8 +206,14 @@ namespace st2se
     size_t index = 0;
     const size_t count = invocation->arguments.size();
     for (const auto& argument : invocation->arguments) {
-      if (type_mask & 1<<argument.type) {
-        stream << argument.toString();
+      if (type_mask & 1<<(int)argument.type) {
+        if (argument.matches(Syscall::ArgumentHint::CONSTANT) ||
+            argument.matches(Syscall::ArgumentType::INTEGER)) {
+          stream << argument.value;
+        }
+        else {
+          stream << argument.toTypeString();
+        }
       }
       else {
         stream << "*";
@@ -197,14 +237,10 @@ namespace st2se
     if (_invocations.empty()) {
       return;
     }
-#if 0
-    stream << std::endl;
-    stream << "## Group: All invocations" << std::endl;
     for (const auto& invocation : _invocations) {
       writeInvocation(stream, invocation);
     }
-    stream << std::endl;
-#endif
+#if 0
     stream << "## Group: INTEGER type masked invocations" << std::endl;
     stream << "```" << std::endl;
     for (const auto& node : _mapped_invocations) {
@@ -246,7 +282,7 @@ namespace st2se
       }
     }
     stream << "```" << std::endl;
-    stream << "---" << std::endl;
+#endif
   }
 
   void Syscall::merge(const Syscall& syscall)

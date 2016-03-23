@@ -4,17 +4,16 @@
 #include <stdexcept>
 #include <memory>
 
-#include "grammar.hpp"
+#include "Grammar.hpp"
 #include "Syscall.hpp"
-
-int analyze(int argc, char *argv[], const std::string& datadir);
 
 namespace st2se
 {
   enum ParserState
   {
     INITIAL,
-    ARGUMENTS
+    ARGUMENTS,
+    RETURN_VALUE
   };
 
   template<typename Rule>
@@ -39,12 +38,24 @@ namespace st2se
   };
 
   template<>
-  struct ParserActions<syscall_full>
+  struct ParserActions<syscall_return>
   {
     template<typename Input>
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ParserState::ARGUMENTS) {
+        state = ParserState::RETURN_VALUE;
+      }
+    }
+  };
+
+  template<>
+  struct ParserActions<syscall_full>
+  {
+    template<typename Input>
+    static void apply(const Input& in, Syscall& syscall, ParserState& state)
+    {
+      if (state == ParserState::RETURN_VALUE) {
         syscall.lastInvocation()->setComplete(true);
         syscall.mapInvocation(syscall.lastInvocation());
       }
@@ -58,7 +69,16 @@ namespace st2se
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ARGUMENTS) {
-        const Syscall::Argument argument(Syscall::ArgumentType::CONSTANT, in.string());
+        Syscall::Argument argument;
+
+        if (in.string().compare("NULL") == 0) {
+          argument.setValue(Syscall::ArgumentType::POINTER, "NULL");
+        }
+        else {
+          argument.setValue(Syscall::ArgumentType::INTEGER, in.string());
+        }
+        argument.setHint(Syscall::ArgumentHint::CONSTANT);
+
         syscall.lastInvocation()->addArgument(argument);
         syscall.mapInvocation(syscall.lastInvocation());
       }
@@ -100,7 +120,8 @@ namespace st2se
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ARGUMENTS) {
-        const Syscall::Argument argument(Syscall::ArgumentType::STRING, in.string());
+        Syscall::Argument argument(Syscall::ArgumentType::POINTER, in.string());
+        argument.setHint(Syscall::ArgumentHint::STRING);
         syscall.lastInvocation()->addArgument(argument);
         syscall.mapInvocation(syscall.lastInvocation());
       }
@@ -114,7 +135,8 @@ namespace st2se
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ARGUMENTS) {
-        const Syscall::Argument argument(Syscall::ArgumentType::ARRAY, in.string());
+        Syscall::Argument argument(Syscall::ArgumentType::POINTER, in.string());
+        argument.setHint(Syscall::ArgumentHint::ARRAY);
         syscall.lastInvocation()->addArgument(argument);
         syscall.mapInvocation(syscall.lastInvocation());
       }
@@ -128,7 +150,8 @@ namespace st2se
     static void apply(const Input& in, Syscall& syscall, ParserState& state)
     {
       if (state == ARGUMENTS) {
-        const Syscall::Argument argument(Syscall::ArgumentType::STRUCTURE, in.string());
+        Syscall::Argument argument(Syscall::ArgumentType::POINTER, in.string());
+        argument.setHint(Syscall::ArgumentHint::STRUCTURE);
         syscall.lastInvocation()->addArgument(argument);
         syscall.mapInvocation(syscall.lastInvocation());
       }
