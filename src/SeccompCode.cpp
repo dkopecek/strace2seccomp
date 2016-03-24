@@ -4,11 +4,13 @@ namespace st2se
 {
   SeccompCode::SeccompCode()
   {
-    setParameter("int", true);
-    setParameter("const", true);
-    setParameter("ranges", false);
-    setParameter("nowrap", false);
-    setParameter("ctxvar", "ctx");
+    if (!setParameter("int", true) ||
+        !setParameter("const", true) ||
+        !setParameter("ranges", false) ||
+        !setParameter("nowrap", false) ||
+        !setParameter("ctxvar", "ctx")) {
+      throw std::runtime_error("BUG: Failed to set default parameter values in SeccompCode ctor");
+    }
   }
 
   bool SeccompCode::isKnownParameter(const std::string& name) const
@@ -25,15 +27,18 @@ namespace st2se
     }
   }
 
+  bool SeccompCode::setParameter(const std::string& name, const char * value)
+  {
+    return setParameter(name, std::string(value));
+  }
+
   bool SeccompCode::setParameter(const std::string& name, const std::string& value)
   {
     if (!isKnownParameter(name)) {
       return false;
     }
 
-    auto& parameter = _parameters[name];
-    parameter.set = true;
-    parameter.value = value;
+    _parameters[name] = { true, value};
     
     return true;
   }
@@ -73,5 +78,50 @@ namespace st2se
 
   void SeccompCode::generate(std::ostream& stream, const DataSet& dataset) const
   {
+    std::unordered_map<std::string, Rule> rules;
+
+    for (auto const& node : dataset.syscallMap()) {
+      auto const& syscall = node.first;
+      rules[syscall].syscall = syscall;
+    }
+
+    std::string ctxvar;
+
+    if (!getParameter("ctxvar", ctxvar) || ctxvar.empty()) {
+      throw std::runtime_error("BUG: empty ctxvar parameter in SeccompCode::generate");
+    }
+
+    for (auto const& node : rules) {
+      auto const& rule = node.second;
+      stream << rule.toString(ctxvar) << std::endl;
+    }
+
+  }
+
+  std::string SeccompCode::Rule::toString(const std::string& ctxvar) const
+  {
+    std::string code;
+
+    /* open function call */
+    code.append("seccomp_rule_add(");
+
+    /* scmp_filter_ctx */
+    code.append(ctxvar);
+
+    /* action */
+    code.append(", SCMP_ACT_ALLOW");
+
+    /* syscall name */
+    code.append(", SCMP_SYS(");
+    code.append(syscall);
+    code.append(")");
+
+    /* number of syscall argument filters */
+    code.append(", 0");
+
+    /* close function call */
+    code.append(");");
+
+    return code;
   }
 } /* namespace st2se */

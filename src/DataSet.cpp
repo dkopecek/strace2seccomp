@@ -30,5 +30,10 @@ namespace st2se
       stream << std::endl;
     }
   }
+
+  const DataSet::SyscallMap& DataSet::syscallMap() const
+  {
+    return _syscalls;
+  }
 } /* namespace st2se */
 

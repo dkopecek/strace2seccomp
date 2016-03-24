@@ -10,12 +10,15 @@ namespace st2se
   class DataSet
   {
     public:
+      using SyscallMap = std::unordered_map<std::string, Syscall>;
+
       DataSet();
       void upsert(const Syscall& syscall);
       void write(std::ostream& stream);
+      const SyscallMap& syscallMap() const;
 
     private:
-      std::unordered_map<std::string, Syscall> _syscalls;
+      SyscallMap _syscalls;
   };
 } /* namespace st2se */
 

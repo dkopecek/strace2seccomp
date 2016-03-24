@@ -12,6 +12,7 @@ namespace st2se
     public:
       SeccompCode();
 
+      bool setParameter(const std::string& name, const char * value);
       bool setParameter(const std::string& name, const std::string& value);
       bool getParameter(const std::string& name, std::string& value) const;
       bool setParameter(const std::string& name, bool state);
@@ -24,13 +25,21 @@ namespace st2se
     private:
       struct Parameter
       {
-        Parameter()
+        Parameter(bool _state = false, const std::string& _value = std::string())
         {
-          set = false;
+          set = _state;
+          value = _value;
         }
         bool set;
         std::string value;
       };
+
+      struct Rule
+      {
+        std::string toString(const std::string& ctxvar) const;
+        std::string syscall;
+      };
+
       std::unordered_map<std::string, Parameter> _parameters;
       std::unordered_map<std::string, unsigned> _masks;
   };
