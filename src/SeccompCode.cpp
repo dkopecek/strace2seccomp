@@ -1,4 +1,5 @@
 #include "SeccompCode.hpp"
+#include <map>
 
 namespace st2se
 {
@@ -78,7 +79,7 @@ namespace st2se
 
   void SeccompCode::generate(std::ostream& stream, const DataSet& dataset) const
   {
-    std::unordered_map<std::string, Rule> rules;
+    std::map<std::string, Rule> rules;
 
     for (auto const& node : dataset.syscallMap()) {
       auto const& syscall = node.first;
@@ -91,11 +92,35 @@ namespace st2se
       throw std::runtime_error("BUG: empty ctxvar parameter in SeccompCode::generate");
     }
 
+    const bool wrap = !getParameter("nowrap");
+    std::string wrap_name = "setupSeccompWhitelist";
+
+    if (wrap) {
+      stream << "int " << wrap_name << "(void)" << std::endl;
+      stream << "{" << std::endl;
+      stream << "  seccomp_filter_ctx " << ctxvar << " = seccomp_init(SCMP_ACT_TRAP);" << std::endl;
+      stream << "  if (!" << ctxvar << ") {" << std::endl;
+      stream << "    return -1;" << std::endl;
+      stream << "  }" << std::endl;
+      stream << "  int ret = 0;" << std::endl;
+    }
+
     for (auto const& node : rules) {
       auto const& rule = node.second;
+      if (wrap) {
+        stream << "  ret |= ";
+      }
       stream << rule.toString(ctxvar) << std::endl;
     }
 
+    if (wrap) {
+      stream << "  if (ret != 0) {" << std::endl;
+      stream << "    ret = -1;" << std::endl;
+      stream << "  }" << std::endl;
+      stream << "  seccomp_release(" << ctxvar << ");" << std::endl;
+      stream << "  return ret;" << std::endl;
+      stream << "}" << std::endl;
+    }
   }
 
   std::string SeccompCode::Rule::toString(const std::string& ctxvar) const
